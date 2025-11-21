@@ -9,9 +9,8 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
+        background: black;
         font-family: Arial, sans-serif;
-        color: white;
-        text-align: center;
     }
 
     /* Фон */
@@ -25,15 +24,17 @@
         background-size: contain;
         background-repeat: no-repeat;
         background-position: center;
-        background-color: black;
         z-index: -1;
     }
 
+    /* Контент */
     .content {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
+        text-align: center;
+        color: white;
         z-index: 10;
     }
 
@@ -50,10 +51,10 @@
     }
 
     button:hover {
-        transform: scale(1.08);
-        background: #47b04b;
+        transform: scale(1.1);
     }
 
+    /* Видео */
     #videoWrapper {
         display: none;
         position: absolute;
@@ -61,31 +62,24 @@
         left: 50%;
         transform: translate(-50%, -50%);
         width: 90%;
-        max-width: 1000px;
+        max-width: 1100px;
         z-index: 20;
     }
 
     video {
         width: 100%;
         border-radius: 20px;
-        box-shadow: 0 0 25px black;
+        box-shadow: 0 0 30px black;
     }
 
     /* Стрелки */
     .arrow {
         position: absolute;
         opacity: 0;
-        transition: opacity 0.5s ease;
         pointer-events: none;
         user-select: none;
-        z-index: 4;
-        border-style: solid;
-        border-color: transparent;
-        border-right-color: red;
-        filter:
-            drop-shadow(0 0 4px black)
-            drop-shadow(2px 2px 2px black)
-            drop-shadow(-2px -2px 2px black);
+        z-index: 5;
+        filter: drop-shadow(0 0 4px black);
     }
 </style>
 </head>
@@ -100,111 +94,133 @@
 </div>
 
 <div id="videoWrapper">
-    <video id="prankVideo" autoplay muted playsinline></video>
+    <video id="prankVideo" playsinline></video>
 </div>
 
 <script>
-/* ----------------- НАСТРОЙКИ ----------------- */
+/* -------- НАСТРОЙКИ -------- */
 const ARROWS_MIN = 3;
 const ARROWS_MAX = 5;
-const CYCLE_TIME = 2500;
-const STOP_DISTANCE = 60;      // расстояние до кнопки
-const MIN_DISTANCE = 120;      // расстояние между стрелками
-let activeArrowTargets = [];
+const CYCLE = 2000;
+const STOP_DISTANCE = 80; // отступ до кнопки
+const MIN_DIST = 150;     // расстояние между стрелками
 
-/* ----------------- ГЕНЕРАЦИЯ СТРЕЛОК ----------------- */
+let arrowTargets = [];
+
+/* -------- СПАВН СТРЕЛОК -------- */
 function spawnArrows() {
     clearArrows();
-    activeArrowTargets = [];
+    arrowTargets = [];
 
     const btn = document.getElementById("trustButton");
     const rect = btn.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
 
-    const arrowCount = Math.floor(Math.random() * (ARROWS_MAX - ARROWS_MIN + 1)) + ARROWS_MIN;
+    const count = ARROWS_MIN + Math.floor(Math.random() * (ARROWS_MAX - ARROWS_MIN + 1));
 
-    for (let i = 0; i < arrowCount; i++) {
-        createArrow(centerX, centerY);
+    for (let i = 0; i < count; i++) {
+        createArrow(cx, cy);
     }
 }
 
-function createArrow(centerX, centerY) {
-    let attempts = 0;
+function createArrow(cx, cy) {
+    for (let i = 0; i < 40; i++) {
 
-    while (attempts < 20) {
-        attempts++;
-
-        let startX, startY;
+        // 1. Старт на краю экрана
+        let x, y;
         const side = Math.floor(Math.random() * 4);
 
-        if (side === 0) { startX = Math.random() * window.innerWidth; startY = 0; }
-        else if (side === 1) { startX = Math.random() * window.innerWidth; startY = window.innerHeight; }
-        else if (side === 2) { startX = 0; startY = Math.random() * window.innerHeight; }
-        else { startX = window.innerWidth; startY = Math.random() * window.innerHeight; }
+        if (side === 0) { x = Math.random() * innerWidth; y = 0; }
+        else if (side === 1) { x = Math.random() * innerWidth; y = innerHeight; }
+        else if (side === 2) { x = 0; y = Math.random() * innerHeight; }
+        else { x = innerWidth; y = Math.random() * innerHeight; }
 
-        const dx = centerX - startX;
-        const dy = centerY - startY;
+        // 2. Направление
+        const dx = cx - x;
+        const dy = cy - y;
         const angle = Math.atan2(dy, dx);
 
-        const targetX = centerX - Math.cos(angle) * STOP_DISTANCE;
-        const targetY = centerY - Math.sin(angle) * STOP_DISTANCE;
+        // 3. Точка, где стрелка остановится
+        const tx = cx - Math.cos(angle) * STOP_DISTANCE;
+        const ty = cy - Math.sin(angle) * STOP_DISTANCE;
 
+        // 4. Проверка дистанции от других стрелок
         let ok = true;
-        for (const pos of activeArrowTargets) {
-            const dist = Math.hypot(pos.x - targetX, pos.y - targetY);
-            if (dist < MIN_DISTANCE) {
+        for (const t of arrowTargets) {
+            if (Math.hypot(t.x - tx, t.y - ty) < MIN_DIST) {
                 ok = false;
                 break;
             }
         }
         if (!ok) continue;
 
+        // 5. Создание стрелки
         const arrow = document.createElement("div");
         arrow.className = "arrow";
 
-        const length = 150 + Math.random() * 350;
-        const thickness = 20 + Math.random() * 20;
+        const length = 200 + Math.random() * 300;
+        const thickness = 25 + Math.random() * 25;
 
-        arrow.style.left = targetX + "px";
-        arrow.style.top = targetY + "px";
+        arrow.style.left = tx + "px";
+        arrow.style.top = ty + "px";
 
-        arrow.style.borderWidth = `${thickness}px ${length}px ${thickness}px 0px`;
-        arrow.style.borderRightColor = "red";
+        // ЦЕЛЬНАЯ СТРЕЛКА (▸)
+        arrow.style.width = length + "px";
+        arrow.style.height = thickness + "px";
+        arrow.style.background = "red";
+        arrow.style.transform = `translate(-100%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
+        arrow.style.border = "4px solid black";
+        arrow.style.borderRight = "none";
 
-        arrow.style.transform = `translateY(-50%) rotate(${angle * 180 / Math.PI}deg)`;
+        // Треугольник наконечника
+        const tip = document.createElement("div");
+        tip.style.position = "absolute";
+        tip.style.right = "-35px";
+        tip.style.top = "50%";
+        tip.style.transform = "translateY(-50%)";
+        tip.style.width = "0";
+        tip.style.height = "0";
+        tip.style.borderTop = (thickness/1.3)+"px solid transparent";
+        tip.style.borderBottom = (thickness/1.3)+"px solid transparent";
+        tip.style.borderLeft = "35px solid red";
+        tip.style.filter = "drop-shadow(0 0 3px black)";
+
+        arrow.appendChild(tip);
 
         document.body.appendChild(arrow);
 
-        setTimeout(() => arrow.style.opacity = 1, 30);
-        setTimeout(() => arrow.style.opacity = 0, CYCLE_TIME - 600);
+        setTimeout(() => { arrow.style.opacity = 1 }, 50);
+        setTimeout(() => { arrow.style.opacity = 0 }, CYCLE - 400);
 
-        activeArrowTargets.push({ x: targetX, y: targetY });
-
+        arrowTargets.push({ x: tx, y: ty });
         return;
     }
 }
 
-/* ----------------- УДАЛЕНИЕ СТРЕЛОК ----------------- */
+/* -------- УДАЛЕНИЕ -------- */
 function clearArrows() {
-    document.querySelectorAll(".arrow").forEach(el => el.remove());
+    document.querySelectorAll(".arrow").forEach(a => a.remove());
 }
 
-/* ----------------- ВИДЕО ----------------- */
+/* -------- ВИДЕО -------- */
 function showVideo() {
     clearArrows();
     document.getElementById("mainContent").style.display = "none";
     document.getElementById("videoWrapper").style.display = "block";
 
-    const vid = document.getElementById("prankVideo");
-    vid.src = "video.mp4";
-    vid.play().catch(() => {});
+    const v = document.getElementById("prankVideo");
+    v.src = "video.mp4";
+
+    /* ВАЖНО: теперь можно включать звук */
+    v.muted = false;
+    v.play();
 }
 
-/* ----------------- СТАРТ ----------------- */
+/* -------- СТАРТ -------- */
 window.onload = () => {
     spawnArrows();
-    setInterval(spawnArrows, CYCLE_TIME);
+    setInterval(spawnArrows, CYCLE);
 };
 </script>
 
