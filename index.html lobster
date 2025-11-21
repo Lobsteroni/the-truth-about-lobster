@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trust me</title>
+<style>
+    body {
+        background-color: #111;
+        color: white;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding-top: 120px;
+    }
+
+    h1 {
+        font-size: 42px;
+        margin-bottom: 40px;
+    }
+
+    button {
+        background: #4CAF50;
+        padding: 20px 40px;
+        font-size: 26px;
+        border: none;
+        border-radius: 12px;
+        color: white;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    button:hover {
+        background: #45a049;
+        transform: scale(1.05);
+    }
+</style>
+</head>
+<body>
+
+<h1>Trust me 😈</h1>
+<button onclick="redirect()">Trust me</button>
+
+<script>
+function redirect() {
+    // Ссылка на видео — можешь заменить на любое
+    window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+}
+</script>
+
+</body>
+</html>
