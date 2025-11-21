@@ -21,13 +21,13 @@ html, body {
 }
 
 /* ФОН — твоя картинка background.png */
-.bg {
+.bg{
     position: fixed;
-    inset: 0;
-    background-image: url('background.png');
+    inset:0;
+    background-image: url("background.png"); /* ← правильный путь */
     background-repeat: no-repeat;
     background-position: center;
-    background-size: cover;
+    background-size: cover; /* или contain */
     filter: brightness(0.55);
     z-index: -1;
 }
