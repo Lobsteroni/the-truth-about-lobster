@@ -14,7 +14,6 @@
         text-align: center;
     }
 
-    /* Фон */
     .bg {
         position: fixed;
         top: 0;
@@ -30,7 +29,6 @@
         z-index: -1;
     }
 
-    /* Центр */
     .content {
         position: absolute;
         top: 50%;
@@ -48,15 +46,8 @@
         color: white;
         cursor: pointer;
         box-shadow: 0 0 10px black;
-        transition: 0.2s;
     }
 
-    button:hover {
-        transform: scale(1.07);
-        background: #45a049;
-    }
-
-    /* Видео по центру */
     #videoWrapper {
         display: none;
         position: fixed;
@@ -73,19 +64,15 @@
         box-shadow: 0 0 30px black;
     }
 
-    /* Стрелки */
+    /* цельная стрелка */
     .arrow {
         position: absolute;
-        font-weight: 900;
-        color: red;
-        text-shadow: 3px 3px 0 black, -3px -3px 0 black,
-                     3px -3px 0 black, -3px 3px 0 black;
-        pointer-events: none;
-        user-select: none;
-        z-index: 4;
-        white-space: nowrap;
+        width: 2000px; /* тянется далеко */
+        height: 40px;
         opacity: 0;
         transition: opacity 0.4s ease;
+        pointer-events: none;
+        z-index: 4;
     }
 </style>
 </head>
@@ -104,13 +91,39 @@
 </div>
 
 <script>
-/* === СТРЕЛКИ МИГАЮТ, ПОКА НЕ НАЖАЛИ КНОПКУ === */
-
-let arrowInterval = null;
-const ARROWS_PER_WAVE = 15;
+let arrowTimer = null;
 const CYCLE = 2500;
 
+/* Создаём одноцелую SVG стрелку */
+function createSvgArrow() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "arrow");
+    svg.setAttribute("viewBox", "0 0 2000 40");
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", "0");
+    line.setAttribute("y1", "20");
+    line.setAttribute("x2", "1800");  // длина
+    line.setAttribute("y2", "20");
+    line.setAttribute("stroke", "red");
+    line.setAttribute("stroke-width", "20");
+    line.setAttribute("stroke-linecap", "round");
+    line.setAttribute("filter", "drop-shadow(0 0 5px black)");
+
+    const head = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    head.setAttribute("points", "1800,0 2000,20 1800,40");
+    head.setAttribute("fill", "red");
+    head.setAttribute("filter", "drop-shadow(0 0 5px black)");
+
+    svg.appendChild(line);
+    svg.appendChild(head);
+
+    return svg;
+}
+
+/* волна стрелок */
 function spawnArrows() {
+
     clearArrows();
 
     const btn = document.getElementById("trustButton");
@@ -118,68 +131,57 @@ function spawnArrows() {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    for (let i = 0; i < ARROWS_PER_WAVE; i++) {
-        const arrow = document.createElement("div");
-        arrow.className = "arrow";
+    const count = 6; // стрелок за волну
 
-        arrow.innerHTML = "➤".repeat(10 + Math.random() * 30);
+    for (let i = 0; i < count; i++) {
+        const arrow = createSvgArrow();
 
         let x, y;
         const side = Math.floor(Math.random() * 4);
 
-        if (side === 0) { 
-            x = Math.random() * window.innerWidth;
-            y = 0;
-        } else if (side === 1) { 
-            x = Math.random() * window.innerWidth;
-            y = window.innerHeight - 10;
-        } else if (side === 2) { 
-            x = 0;
-            y = Math.random() * window.innerHeight;
-        } else { 
-            x = window.innerWidth - 10;
-            y = Math.random() * window.innerHeight;
-        }
+        if (side === 0) { x = Math.random() * innerWidth; y = 0; }
+        if (side === 1) { x = Math.random() * innerWidth; y = innerHeight; }
+        if (side === 2) { x = 0; y = Math.random() * innerHeight; }
+        if (side === 3) { x = innerWidth; y = Math.random() * innerHeight; }
 
+        // угол на кнопку
         const dx = centerX - x;
         const dy = centerY - y;
         const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-        arrow.style.left = x + "px";
-        arrow.style.top = y + "px";
+        arrow.style.left = `${x}px`;
+        arrow.style.top = `${y}px`;
         arrow.style.transform = `rotate(${angle}deg)`;
-        arrow.style.fontSize = (40 + Math.random() * 60) + "px";
 
+        arrow.style.opacity = "0";
         document.body.appendChild(arrow);
 
-        // плавное появление
-        setTimeout(() => { arrow.style.opacity = 1; }, 15);
-
-        // исчезновение перед новой волной
-        setTimeout(() => { arrow.style.opacity = 0; }, CYCLE - 600);
+        setTimeout(() => { arrow.style.opacity = "1"; }, 20);
+        setTimeout(() => { arrow.style.opacity = "0"; }, CYCLE - 600);
     }
 }
 
+/* Удалить старые стрелки */
 function clearArrows() {
-    document.querySelectorAll(".arrow").forEach(el => el.remove());
+    document.querySelectorAll(".arrow").forEach(a => a.remove());
 }
 
-/* запуск стрелок */
+/* мигание стрелок */
 window.onload = () => {
     spawnArrows();
-    arrowInterval = setInterval(spawnArrows, CYCLE);
+    arrowTimer = setInterval(spawnArrows, CYCLE);
 };
 
-/* === ПОКАЗ ВИДЕО === */
+/* видео */
 function showVideo() {
-    clearInterval(arrowInterval);
+    clearInterval(arrowTimer);
     clearArrows();
 
     document.getElementById("mainContent").style.display = "none";
     document.getElementById("videoWrapper").style.display = "block";
 
     const vid = document.getElementById("prankVideo");
-    vid.src = "video.mp4"; // <-- ТВОЙ ВИДЕОФАЙЛ
+    vid.src = "video.mp4";
 
     vid.play().catch(()=>{});
     setTimeout(() => {
