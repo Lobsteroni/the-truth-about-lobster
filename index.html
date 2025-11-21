@@ -15,21 +15,21 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background: #000;
+    background: none; /* ← Убрали чёрный фон, теперь фон-картинка не скрывается */
     font-family: Arial, sans-serif;
     color: #fff;
 }
 
-/* ФОН — твоя картинка background.png */
-.bg{
+/* ФОН — картинка background.png */
+.bg {
     position: fixed;
-    inset:0;
-    background-image: url("background.png"); /* ← правильный путь */
+    inset: 0;
+    background-image: url("background.png");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: cover; /* или contain */
+    background-size: cover;
     filter: brightness(0.55);
-    z-index: -1;
+    z-index: 0; /* ← Нормальный уровень, не под body */
 }
 
 /* Центральный блок с кнопкой */
@@ -95,6 +95,7 @@ button#trustButton:hover {
 </head>
 
 <body>
+
 <div class="bg"></div>
 
 <div class="content" id="mainContent">
@@ -118,16 +119,13 @@ const ARROW_MAX_THICK = 46;
 const ARROW_MIN_HEAD = 28;
 const ARROW_MAX_HEAD = 90;
 
-/* расстояние, чтобы стрелка НЕ подходила слишком близко к центру */
-const ARROW_MARGIN = 160;   // ← отодвинул от центра на ~2–3 см
+const ARROW_MARGIN = 160;
 
 let arrowInterval = null;
 
-/* --- рандом --- */
 function rand(min, max) { return min + Math.random() * (max - min); }
 function randInt(min, max) { return Math.floor(rand(min, max+1)); }
 
-/* точка появления по краям экрана */
 function pickSpawnPoint() {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -142,7 +140,6 @@ function pickSpawnPoint() {
     return choices[randInt(0, choices.length-1)];
 }
 
-/* создаём SVG стрелку */
 function makeArrowSVG(sx, sy, cx, cy) {
     const dx = cx - sx;
     const dy = cy - sy;
@@ -167,7 +164,6 @@ function makeArrowSVG(sx, sy, cx, cy) {
     svg.style.left = sx + "px";
     svg.style.top = sy + "px";
 
-    /* outline */
     let out = document.createElementNS(svgNS, "rect");
     out.setAttribute("x", 0);
     out.setAttribute("y", centerY - thickness/2 - 2);
@@ -177,7 +173,6 @@ function makeArrowSVG(sx, sy, cx, cy) {
     out.setAttribute("fill", "black");
     svg.appendChild(out);
 
-    /* line */
     let line = document.createElementNS(svgNS, "rect");
     line.setAttribute("x", 2);
     line.setAttribute("y", centerY - thickness/2);
@@ -187,7 +182,6 @@ function makeArrowSVG(sx, sy, cx, cy) {
     line.setAttribute("fill", "red");
     svg.appendChild(line);
 
-    /* head */
     const headH = Math.max(thickness * 1.6, headLen * 0.8);
     const baseX = 2 + shaftLen;
 
@@ -205,7 +199,6 @@ function makeArrowSVG(sx, sy, cx, cy) {
     head.setAttribute("fill", "red");
     svg.appendChild(head);
 
-    /* поворот */
     const angle = Math.atan2(dy, dx) * 180 / Math.PI;
     svg.style.transform = `rotate(${angle}deg)`;
     svg.style.transformOrigin = `0 ${centerY}px`;
@@ -213,7 +206,6 @@ function makeArrowSVG(sx, sy, cx, cy) {
     return svg;
 }
 
-/* создаём волну */
 function spawnWave() {
     const btn = document.getElementById("trustButton");
     const rect = btn.getBoundingClientRect();
@@ -246,12 +238,10 @@ function clearAllArrows() {
     document.querySelectorAll('.arrow-svg').forEach(a => a.remove());
 }
 
-/* Старт */
 window.addEventListener("load", () => {
     setTimeout(startArrowLoop, 120);
 });
 
-/* Показ видео */
 function showVideo() {
     clearAllArrows();
 
