@@ -20,7 +20,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-image: url('/mnt/data/43a9c521-3d45-4150-ab6e-b832c2e868b9.png');
+        background-image: url('background.png'); /* <-- твоя картинка */
         background-size: cover;
         background-position: center;
         filter: brightness(0.55);
@@ -59,10 +59,9 @@
         margin-top: 40px;
     }
 
-    iframe {
+    video {
         width: 90%;
-        height: 500px;
-        border: none;
+        max-width: 900px;
         border-radius: 20px;
         box-shadow: 0 0 20px black;
     }
@@ -76,30 +75,31 @@
 <div class="content">
     <h1>Trust me 😈</h1>
 
-    <!-- КНОПКА НИЧЕГО НЕ ОТКРЫВАЕТ -->
     <button type="button" onclick="showVideo()">Trust me</button>
 
     <div id="videoWrapper">
-        <iframe id="ytvideo"
-            src=""
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen>
-        </iframe>
+        <video id="prankVideo" autoplay muted playsinline></video>
     </div>
 </div>
 
 <script>
 function showVideo() {
-
-    // Показываем блок
     const wrapper = document.getElementById("videoWrapper");
+    const video = document.getElementById("prankVideo");
+
     wrapper.style.display = "block";
 
-    // Вставляем встроенный YouTube player
-    const frame = document.getElementById("ytvideo");
-    frame.src = "https://www.youtube.com/embed/TYgOlqinH7A?start=13&autoplay=1";
+    // Указываем файл видео
+    video.src = "video.mp4";
 
-    // Без переходов!!!
+    // Пробуем сразу запустить
+    video.play().catch(err => console.log("Autoplay blocked:", err));
+
+    // Через 300мс включаем звук (обход ограничения)
+    setTimeout(() => {
+        video.muted = false;
+        video.play();
+    }, 300);
 }
 </script>
 
