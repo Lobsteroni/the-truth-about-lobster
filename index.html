@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -11,20 +10,21 @@
     --arrow-z: 1000;
 }
 
-html,body{
-    height:100%;
-    margin:0;
-    padding:0;
+/* Сброс */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
     background: #000;
     font-family: Arial, sans-serif;
     color: #fff;
 }
 
-/* фон */
-.bg{
+/* ФОН — твоя картинка background.png */
+.bg {
     position: fixed;
-    inset:0;
-    background-image: url("background.png"); /* ← ИСПРАВЛЕНО */
+    inset: 0;
+    background-image: url('background.png');
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
@@ -32,60 +32,59 @@ html,body{
     z-index: -1;
 }
 
-/* Центр с кнопкой */
+/* Центральный блок с кнопкой */
 .content {
     position: absolute;
-    top:50%;
-    left:50%;
-    transform: translate(-50%,-50%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     z-index: 20;
-    text-align:center;
+    text-align: center;
 }
 
 h1 {
-    margin:0 0 12px 0;
-    font-size:28px;
-    text-shadow:0 2px 6px rgba(0,0,0,0.7);
+    margin: 0 0 12px 0;
+    font-size: 28px;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7);
 }
 
 button#trustButton {
-    background:#38a853;
-    border:none;
-    color:white;
-    padding:18px 34px;
-    font-size:22px;
-    border-radius:12px;
-    cursor:pointer;
-    box-shadow:0 6px 18px rgba(0,0,0,0.6);
+    background: #38a853;
+    border: none;
+    color: white;
+    padding: 18px 34px;
+    font-size: 22px;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
 }
-
-button#trustButton:hover{
-    transform:scale(1.05);
+button#trustButton:hover {
+    transform: scale(1.05);
 }
 
 /* Видео */
 #videoWrapper {
-    display:none;
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     z-index: 30;
     width: 90vw;
     max-width: 1100px;
 }
 
-#videoWrapper video{
-    width:100%;
-    border-radius:14px;
-    box-shadow:0 18px 60px rgba(0,0,0,0.7);
+#videoWrapper video {
+    width: 100%;
+    border-radius: 14px;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.7);
 }
 
-/* SVG стрелки */
+/* Стрелки */
 .arrow-svg {
     position: absolute;
-    left:0;
-    top:0;
+    left: 0;
+    top: 0;
     transform-origin: 0 50%;
     pointer-events: none;
     z-index: var(--arrow-z);
@@ -93,10 +92,9 @@ button#trustButton:hover{
     transition: opacity 0.35s ease;
 }
 </style>
-
 </head>
-<body>
 
+<body>
 <div class="bg"></div>
 
 <div class="content" id="mainContent">
@@ -120,38 +118,36 @@ const ARROW_MAX_THICK = 46;
 const ARROW_MIN_HEAD = 28;
 const ARROW_MAX_HEAD = 90;
 
-/* ← УВЕЛИЧЕН ОТСТУП СТРЕЛОК, чтобы НЕ ЛЕЗЛИ НА КНОПКУ */
-const ARROW_MARGIN = 100;   /* ИСПРАВЛЕНО */
+/* расстояние, чтобы стрелка НЕ подходила слишком близко к центру */
+const ARROW_MARGIN = 160;   // ← отодвинул от центра на ~2–3 см
 
 let arrowInterval = null;
 
+/* --- рандом --- */
 function rand(min, max) { return min + Math.random() * (max - min); }
 function randInt(min, max) { return Math.floor(rand(min, max+1)); }
 
+/* точка появления по краям экрана */
 function pickSpawnPoint() {
     const w = window.innerWidth;
     const h = window.innerHeight;
 
     const choices = [
-        {x:0,y:0},
-        {x:rand(0,w),y:0},
-        {x:w,y:0},
-        {x:w,y:rand(0,h)},
-        {x:w,y:h},
-        {x:rand(0,w),y:h},
-        {x:0,y:h},
-        {x:0,y:rand(0,h)}
+        {x: rand(0,w), y: 0},
+        {x: w, y: rand(0,h)},
+        {x: rand(0,w), y: h},
+        {x: 0, y: rand(0,h)}
     ];
 
     return choices[randInt(0, choices.length-1)];
 }
 
-/* === Реализация SVG стрелки === */
-function makeArrowSVG_impl(sx, sy, cx, cy) {
+/* создаём SVG стрелку */
+function makeArrowSVG(sx, sy, cx, cy) {
     const dx = cx - sx;
     const dy = cy - sy;
-    const dist = Math.hypot(dx, dy);
 
+    const dist = Math.hypot(dx, dy);
     const thickness = randInt(ARROW_MIN_THICK, ARROW_MAX_THICK);
     const headLen = randInt(ARROW_MIN_HEAD, ARROW_MAX_HEAD);
 
@@ -164,24 +160,25 @@ function makeArrowSVG_impl(sx, sy, cx, cy) {
     const svgNS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(svgNS, "svg");
 
-    svg.setAttribute("class", "arrow-svg");
+    svg.classList.add("arrow-svg");
     svg.setAttribute("width", shaftLen + headLen + 4);
     svg.setAttribute("height", height + 4);
-    svg.setAttribute("viewBox", `0 0 ${shaftLen + headLen + 4} ${height + 4}`);
 
     svg.style.left = sx + "px";
     svg.style.top = sy + "px";
 
-    const lineStroke = document.createElementNS(svgNS, "rect");
-    lineStroke.setAttribute("x", 0);
-    lineStroke.setAttribute("y", centerY - thickness/2 - 2);
-    lineStroke.setAttribute("width", shaftLen + 4);
-    lineStroke.setAttribute("height", thickness + 4);
-    lineStroke.setAttribute("rx", thickness/2 + 2);
-    lineStroke.setAttribute("fill", "black");
-    svg.appendChild(lineStroke);
+    /* outline */
+    let out = document.createElementNS(svgNS, "rect");
+    out.setAttribute("x", 0);
+    out.setAttribute("y", centerY - thickness/2 - 2);
+    out.setAttribute("width", shaftLen + 4);
+    out.setAttribute("height", thickness + 4);
+    out.setAttribute("rx", thickness/2 + 2);
+    out.setAttribute("fill", "black");
+    svg.appendChild(out);
 
-    const line = document.createElementNS(svgNS, "rect");
+    /* line */
+    let line = document.createElementNS(svgNS, "rect");
     line.setAttribute("x", 2);
     line.setAttribute("y", centerY - thickness/2);
     line.setAttribute("width", shaftLen);
@@ -190,60 +187,56 @@ function makeArrowSVG_impl(sx, sy, cx, cy) {
     line.setAttribute("fill", "red");
     svg.appendChild(line);
 
-    const headH = Math.max(thickness*1.6, headLen * 0.8);
+    /* head */
+    const headH = Math.max(thickness * 1.6, headLen * 0.8);
     const baseX = 2 + shaftLen;
 
     const p1 = `${baseX},${centerY - headH/2}`;
     const p2 = `${baseX + headLen},${centerY}`;
     const p3 = `${baseX},${centerY + headH/2}`;
 
-    const headOutline = document.createElementNS(svgNS, "polygon");
-    headOutline.setAttribute("points", `${p1} ${p2} ${p3}`);
-    headOutline.setAttribute("fill", "black");
-    svg.appendChild(headOutline);
+    let headOut = document.createElementNS(svgNS, "polygon");
+    headOut.setAttribute("points", `${p1} ${p2} ${p3}`);
+    headOut.setAttribute("fill", "black");
+    svg.appendChild(headOut);
 
-    const head = document.createElementNS(svgNS, "polygon");
+    let head = document.createElementNS(svgNS, "polygon");
     head.setAttribute("points", `${p1} ${p2} ${p3}`);
     head.setAttribute("fill", "red");
     svg.appendChild(head);
 
+    /* поворот */
     const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
     svg.style.transform = `rotate(${angle}deg)`;
     svg.style.transformOrigin = `0 ${centerY}px`;
 
     return svg;
 }
 
-function makeArrowSVG(sx, sy, cx, cy) {
-    return makeArrowSVG_impl(sx, sy, cx, cy);
-}
-
-/* === Волна стрелок === */
+/* создаём волну */
 function spawnWave() {
-    const main = document.getElementById('mainContent');
-    if (main.style.display === 'none') return;
-
-    const btn = document.getElementById('trustButton');
-    const r = btn.getBoundingClientRect();
-    const cx = r.left + r.width/2;
-    const cy = r.top + r.height/2;
+    const btn = document.getElementById("trustButton");
+    const rect = btn.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
 
     const count = randInt(MIN_ARROWS, MAX_ARROWS);
 
-    for (let i=0;i<count;i++){
+    for (let i = 0; i < count; i++) {
         const p = pickSpawnPoint();
         const arrow = makeArrowSVG(p.x, p.y, cx, cy);
+
         document.body.appendChild(arrow);
 
-        const d = randInt(10,220);
-        setTimeout(()=>arrow.style.opacity=1, d);
-        setTimeout(()=>arrow.style.opacity=0, CYCLE_MS - 500 + d);
-        setTimeout(()=>arrow.remove(), CYCLE_MS + 400 + d);
+        const delay = randInt(10, 220);
+
+        setTimeout(() => arrow.style.opacity = "1", delay);
+        setTimeout(() => arrow.style.opacity = "0", CYCLE_MS - 500 + delay);
+        setTimeout(() => arrow.remove(), CYCLE_MS + 400 + delay);
     }
 }
 
-function startArrowLoop(){
+function startArrowLoop() {
     spawnWave();
     arrowInterval = setInterval(spawnWave, CYCLE_MS);
 }
@@ -253,25 +246,31 @@ function clearAllArrows() {
     document.querySelectorAll('.arrow-svg').forEach(a => a.remove());
 }
 
-window.addEventListener('load', () => {
+/* Старт */
+window.addEventListener("load", () => {
     setTimeout(startArrowLoop, 120);
 });
 
-/* === Видео === */
+/* Показ видео */
 function showVideo() {
     clearAllArrows();
 
-    document.getElementById('mainContent').style.display = 'none';
-    document.getElementById('videoWrapper').style.display = 'block';
+    document.getElementById("mainContent").style.display = "none";
 
-    const vid = document.getElementById('prankVideo');
+    const wrap = document.getElementById("videoWrapper");
+    wrap.style.display = "block";
 
+    const vid = document.getElementById("prankVideo");
     vid.src = "video.mp4";
-    vid.muted = false;
-    vid.play().catch(()=>{});
+
+    vid.play().then(() => {
+        setTimeout(() => {
+            vid.muted = false;
+            vid.play();
+        }, 300);
+    });
 }
 </script>
 
 </body>
 </html>
-
