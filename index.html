@@ -1,4 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trust me</title>
+
 <style>
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        color: white;
+        text-align: center;
+    }
+
+    /* Фон */
+    .bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('background.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-color: black;
+        filter: brightness(0.55);
+        z-index: -1;
+    }
+
+    /* Центр */
+    .content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 5;
+    }
+
+    button {
+        background: #4CAF50;
+        padding: 20px 40px;
+        font-size: 30px;
+        border: none;
+        border-radius: 15px;
+        color: white;
+        cursor: pointer;
+        box-shadow: 0 0 10px black;
+        transition: 0.2s;
+    }
+
+    button:hover {
+        transform: scale(1.07);
+        background: #45a049;
+    }
+
+    /* Видео по центру */
+    #videoWrapper {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+    }
+
+    video {
+        width: 90vw;
+        max-width: 900px;
+        border-radius: 20px;
+        box-shadow: 0 0 30px black;
+    }
+
+    /* Стрелки */
     .arrow {
         position: absolute;
         font-weight: 900;
@@ -10,13 +85,30 @@
         z-index: 4;
         white-space: nowrap;
         opacity: 0;
-        transition: opacity 0.5s ease;
+        transition: opacity 0.4s ease;
     }
 </style>
+</head>
+
+<body>
+
+<div class="bg"></div>
+
+<div class="content" id="mainContent">
+    <h1>Trust me 😈</h1>
+    <button id="trustButton" onclick="showVideo()">Trust me</button>
+</div>
+
+<div id="videoWrapper">
+    <video id="prankVideo" autoplay muted playsinline></video>
+</div>
 
 <script>
-const ARROWS = 15;           // сколько стрелок появляется за раз
-const ARROW_CYCLE_TIME = 2500; // полный цикл (появились → исчезли)
+/* === СТРЕЛКИ МИГАЮТ, ПОКА НЕ НАЖАЛИ КНОПКУ === */
+
+let arrowInterval = null;
+const ARROWS_PER_WAVE = 15;
+const CYCLE = 2500;
 
 function spawnArrows() {
     clearArrows();
@@ -26,14 +118,12 @@ function spawnArrows() {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    for (let i = 0; i < ARROWS; i++) {
+    for (let i = 0; i < ARROWS_PER_WAVE; i++) {
         const arrow = document.createElement("div");
         arrow.className = "arrow";
 
-        // Рандомная длина
         arrow.innerHTML = "➤".repeat(10 + Math.random() * 30);
 
-        // Где появится стрелка (края экрана)
         let x, y;
         const side = Math.floor(Math.random() * 4);
 
@@ -51,7 +141,6 @@ function spawnArrows() {
             y = Math.random() * window.innerHeight;
         }
 
-        // Угол к центру кнопки
         const dx = centerX - x;
         const dy = centerY - y;
         const angle = Math.atan2(dy, dx) * 180 / Math.PI;
@@ -63,11 +152,11 @@ function spawnArrows() {
 
         document.body.appendChild(arrow);
 
-        // Плавное появление (через 10 мс чтобы сработал transition)
-        setTimeout(() => { arrow.style.opacity = 1; }, 10);
+        // плавное появление
+        setTimeout(() => { arrow.style.opacity = 1; }, 15);
 
-        // Исчезновение перед удалением
-        setTimeout(() => { arrow.style.opacity = 0; }, ARROW_CYCLE_TIME - 600);
+        // исчезновение перед новой волной
+        setTimeout(() => { arrow.style.opacity = 0; }, CYCLE - 600);
     }
 }
 
@@ -75,22 +164,30 @@ function clearArrows() {
     document.querySelectorAll(".arrow").forEach(el => el.remove());
 }
 
-// Запуск мигания стрелок каждые 2.5 секунды
-window.onload = function () {
+/* запуск стрелок */
+window.onload = () => {
     spawnArrows();
-    setInterval(spawnArrows, ARROW_CYCLE_TIME);
+    arrowInterval = setInterval(spawnArrows, CYCLE);
 };
 
-// Когда начинается видео — стрелки исчезают
+/* === ПОКАЗ ВИДЕО === */
 function showVideo() {
+    clearInterval(arrowInterval);
     clearArrows();
+
     document.getElementById("mainContent").style.display = "none";
     document.getElementById("videoWrapper").style.display = "block";
 
     const vid = document.getElementById("prankVideo");
-    vid.src = "video.mp4";
+    vid.src = "video.mp4"; // <-- ТВОЙ ВИДЕОФАЙЛ
 
     vid.play().catch(()=>{});
-    setTimeout(() => { vid.muted = false; vid.play(); }, 300);
+    setTimeout(() => {
+        vid.muted = false;
+        vid.play();
+    }, 300);
 }
 </script>
+
+</body>
+</html>
