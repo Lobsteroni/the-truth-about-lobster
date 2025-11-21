@@ -1,212 +1,275 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-<meta charset="UTF-8">
-<title>Trust me</title>
-<style>
 
-html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Trust me</title>
+
+<style>
+:root {
+    --arrow-z: 1000;
 }
 
-/* ФОН — твой background.png */
-.bg {
+html,body{
+    height:100%;
+    margin:0;
+    padding:0;
+    background: #000;
+    font-family: Arial, sans-serif;
+    color: #fff;
+}
+
+/* фон */
+.bg{
     position: fixed;
-    inset: 0;
-    background-image: url("background.png");
-    background-size: cover;
-    background-position: center;
+    inset:0;
+    background-image: url("background.png"); /* ← ИСПРАВЛЕНО */
     background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
     filter: brightness(0.55);
     z-index: -1;
 }
 
-/* Видео поверх фона */
-video {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    pointer-events: none;
-    z-index: -1;
-}
-
-/* Центр */
-.center-box {
+/* Центр с кнопкой */
+.content {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
+    top:50%;
+    left:50%;
+    transform: translate(-50%,-50%);
+    z-index: 20;
+    text-align:center;
 }
 
 h1 {
-    color: white;
-    font-size: 32px;
-    margin-bottom: 20px;
+    margin:0 0 12px 0;
+    font-size:28px;
+    text-shadow:0 2px 6px rgba(0,0,0,0.7);
 }
 
-button {
-    padding: 15px 40px;
-    font-size: 22px;
-    border-radius: 12px;
-    border: none;
-    cursor: pointer;
-    background: #32c34a;
-    color: white;
-    transition: 0.25s;
+button#trustButton {
+    background:#38a853;
+    border:none;
+    color:white;
+    padding:18px 34px;
+    font-size:22px;
+    border-radius:12px;
+    cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,0.6);
 }
 
-button:hover {
-    background: #2baa40;
+button#trustButton:hover{
+    transform:scale(1.05);
 }
 
-/* СТРЕЛКИ */
-.arrow {
+/* Видео */
+#videoWrapper {
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    z-index: 30;
+    width: 90vw;
+    max-width: 1100px;
+}
+
+#videoWrapper video{
+    width:100%;
+    border-radius:14px;
+    box-shadow:0 18px 60px rgba(0,0,0,0.7);
+}
+
+/* SVG стрелки */
+.arrow-svg {
     position: absolute;
-    width: 140px;
-    height: 140px;
-    background: transparent;
+    left:0;
+    top:0;
+    transform-origin: 0 50%;
     pointer-events: none;
-    z-index: 10;
+    z-index: var(--arrow-z);
+    opacity: 0;
+    transition: opacity 0.35s ease;
 }
-
-.arrow svg {
-    width: 100%;
-    height: 100%;
-    transform-origin: center;
-    filter: drop-shadow(0 0 3px black);
-}
-
 </style>
+
 </head>
 <body>
 
 <div class="bg"></div>
 
-<!-- Видео -->
-<video src="video.mp4" autoplay muted playsinline></video>
-<script>
-/* Разрешаем звук сразу */
-document.querySelector("video").muted = false;
-document.querySelector("video").play();
-</script>
-
-<!-- Центр -->
-<div class="center-box">
+<div class="content" id="mainContent">
     <h1>Trust me 😈</h1>
-    <button id="trustBtn">Trust me</button>
+    <button id="trustButton" onclick="showVideo()">Trust me</button>
+</div>
+
+<div id="videoWrapper">
+    <video id="prankVideo" autoplay muted playsinline></video>
 </div>
 
 <script>
-const btn = document.getElementById("trustBtn");
-const ARROW_MARGIN = 120; // стрелка останавливается за ~3 см
-const MIN_DISTANCE = 160; // стрелки не пересекаются
-let arrows = [];
+/* ==== ПАРАМЕТРЫ ==== */
+const CYCLE_MS = 2500;
+const MIN_ARROWS = 3;
+const MAX_ARROWS = 5;
 
-function createArrow() {
-    const arrow = document.createElement("div");
-    arrow.className = "arrow";
+const ARROW_MIN_THICK = 12;
+const ARROW_MAX_THICK = 46;
 
-    // SVG стрелки с чёрной окантовкой
-    arrow.innerHTML = `
-        <svg viewBox="0 0 200 200">
-            <polygon points="0,80 120,80 120,40 200,100 120,160 120,120 0,120"
-                fill="red" stroke="black" stroke-width="8"/>
-        </svg>
-    `;
+const ARROW_MIN_HEAD = 28;
+const ARROW_MAX_HEAD = 90;
 
-    document.body.appendChild(arrow);
-    return arrow;
-}
+/* ← УВЕЛИЧЕН ОТСТУП СТРЕЛОК, чтобы НЕ ЛЕЗЛИ НА КНОПКУ */
+const ARROW_MARGIN = 100;   /* ИСПРАВЛЕНО */
 
-function getRandomSidePosition() {
-    const side = Math.floor(Math.random() * 4);
+let arrowInterval = null;
+
+function rand(min, max) { return min + Math.random() * (max - min); }
+function randInt(min, max) { return Math.floor(rand(min, max+1)); }
+
+function pickSpawnPoint() {
     const w = window.innerWidth;
     const h = window.innerHeight;
 
-    switch (side) {
-        case 0: return { x: Math.random() * w, y: -50 };        // сверху
-        case 1: return { x: w + 50, y: Math.random() * h };      // справа
-        case 2: return { x: Math.random() * w, y: h + 50 };      // снизу
-        case 3: return { x: -50, y: Math.random() * h };         // слева
+    const choices = [
+        {x:0,y:0},
+        {x:rand(0,w),y:0},
+        {x:w,y:0},
+        {x:w,y:rand(0,h)},
+        {x:w,y:h},
+        {x:rand(0,w),y:h},
+        {x:0,y:h},
+        {x:0,y:rand(0,h)}
+    ];
+
+    return choices[randInt(0, choices.length-1)];
+}
+
+/* === Реализация SVG стрелки === */
+function makeArrowSVG_impl(sx, sy, cx, cy) {
+    const dx = cx - sx;
+    const dy = cy - sy;
+    const dist = Math.hypot(dx, dy);
+
+    const thickness = randInt(ARROW_MIN_THICK, ARROW_MAX_THICK);
+    const headLen = randInt(ARROW_MIN_HEAD, ARROW_MAX_HEAD);
+
+    const usable = Math.max(40, dist - ARROW_MARGIN);
+    const shaftLen = Math.max(20, usable - headLen);
+
+    const height = Math.max(thickness * 1.6, headLen * 0.8);
+    const centerY = height / 2;
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+
+    svg.setAttribute("class", "arrow-svg");
+    svg.setAttribute("width", shaftLen + headLen + 4);
+    svg.setAttribute("height", height + 4);
+    svg.setAttribute("viewBox", `0 0 ${shaftLen + headLen + 4} ${height + 4}`);
+
+    svg.style.left = sx + "px";
+    svg.style.top = sy + "px";
+
+    const lineStroke = document.createElementNS(svgNS, "rect");
+    lineStroke.setAttribute("x", 0);
+    lineStroke.setAttribute("y", centerY - thickness/2 - 2);
+    lineStroke.setAttribute("width", shaftLen + 4);
+    lineStroke.setAttribute("height", thickness + 4);
+    lineStroke.setAttribute("rx", thickness/2 + 2);
+    lineStroke.setAttribute("fill", "black");
+    svg.appendChild(lineStroke);
+
+    const line = document.createElementNS(svgNS, "rect");
+    line.setAttribute("x", 2);
+    line.setAttribute("y", centerY - thickness/2);
+    line.setAttribute("width", shaftLen);
+    line.setAttribute("height", thickness);
+    line.setAttribute("rx", thickness/2);
+    line.setAttribute("fill", "red");
+    svg.appendChild(line);
+
+    const headH = Math.max(thickness*1.6, headLen * 0.8);
+    const baseX = 2 + shaftLen;
+
+    const p1 = `${baseX},${centerY - headH/2}`;
+    const p2 = `${baseX + headLen},${centerY}`;
+    const p3 = `${baseX},${centerY + headH/2}`;
+
+    const headOutline = document.createElementNS(svgNS, "polygon");
+    headOutline.setAttribute("points", `${p1} ${p2} ${p3}`);
+    headOutline.setAttribute("fill", "black");
+    svg.appendChild(headOutline);
+
+    const head = document.createElementNS(svgNS, "polygon");
+    head.setAttribute("points", `${p1} ${p2} ${p3}`);
+    head.setAttribute("fill", "red");
+    svg.appendChild(head);
+
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    svg.style.transform = `rotate(${angle}deg)`;
+    svg.style.transformOrigin = `0 ${centerY}px`;
+
+    return svg;
+}
+
+function makeArrowSVG(sx, sy, cx, cy) {
+    return makeArrowSVG_impl(sx, sy, cx, cy);
+}
+
+/* === Волна стрелок === */
+function spawnWave() {
+    const main = document.getElementById('mainContent');
+    if (main.style.display === 'none') return;
+
+    const btn = document.getElementById('trustButton');
+    const r = btn.getBoundingClientRect();
+    const cx = r.left + r.width/2;
+    const cy = r.top + r.height/2;
+
+    const count = randInt(MIN_ARROWS, MAX_ARROWS);
+
+    for (let i=0;i<count;i++){
+        const p = pickSpawnPoint();
+        const arrow = makeArrowSVG(p.x, p.y, cx, cy);
+        document.body.appendChild(arrow);
+
+        const d = randInt(10,220);
+        setTimeout(()=>arrow.style.opacity=1, d);
+        setTimeout(()=>arrow.style.opacity=0, CYCLE_MS - 500 + d);
+        setTimeout(()=>arrow.remove(), CYCLE_MS + 400 + d);
     }
 }
 
-function arrowsTooClose(x, y) {
-    for (const a of arrows) {
-        const dx = a.x - x;
-        const dy = a.y - y;
-        if (Math.sqrt(dx*dx + dy*dy) < MIN_DISTANCE) return true;
-    }
-    return false;
+function startArrowLoop(){
+    spawnWave();
+    arrowInterval = setInterval(spawnWave, CYCLE_MS);
 }
 
-function spawnArrows() {
-    const rect = btn.getBoundingClientRect();
-    const targetX = rect.left + rect.width / 2;
-    const targetY = rect.top + rect.height / 2;
-
-    arrows = [];
-
-    const count = 3 + Math.floor(Math.random() * 3); // 3–5 стрелок
-
-    for (let i = 0; i < count; i++) {
-        let pos;
-        let tries = 0;
-
-        do {
-            pos = getRandomSidePosition();
-            tries++;
-            if (tries > 20) break;
-        } while (arrowsTooClose(pos.x, pos.y));
-
-        const arrow = createArrow();
-        arrow.style.left = pos.x + "px";
-        arrow.style.top = pos.y + "px";
-
-        arrow.x = pos.x;
-        arrow.y = pos.y;
-
-        const dx = targetX - pos.x;
-        const dy = targetY - pos.y;
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-        arrow.querySelector("svg").style.transform = `rotate(${angle}deg)`;
-
-        arrows.push(arrow);
-
-        // Движение
-        let progress = 0;
-        const speed = 0.0035 + Math.random()*0.001;
-
-        function animate() {
-            progress += speed;
-
-            const distX = dx * progress;
-            const distY = dy * progress;
-
-            const currentX = pos.x + distX;
-            const currentY = pos.y + distY;
-
-            const distanceToBtn = Math.hypot(targetX - currentX, targetY - currentY);
-
-            if (distanceToBtn > ARROW_MARGIN) {
-                arrow.style.left = currentX + "px";
-                arrow.style.top = currentY + "px";
-                requestAnimationFrame(animate);
-            }
-        }
-        animate();
-    }
+function clearAllArrows() {
+    clearInterval(arrowInterval);
+    document.querySelectorAll('.arrow-svg').forEach(a => a.remove());
 }
 
-spawnArrows();
-setInterval(spawnArrows, 3000);
+window.addEventListener('load', () => {
+    setTimeout(startArrowLoop, 120);
+});
+
+/* === Видео === */
+function showVideo() {
+    clearAllArrows();
+
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('videoWrapper').style.display = 'block';
+
+    const vid = document.getElementById('prankVideo');
+
+    vid.src = "video.mp4";
+    vid.muted = false;
+    vid.play().catch(()=>{});
+}
 </script>
 
 </body>
