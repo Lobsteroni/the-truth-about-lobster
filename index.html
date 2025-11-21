@@ -34,14 +34,15 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
+        z-index: 5;
     }
 
     button {
         background: #4CAF50;
         padding: 20px 40px;
-        font-size: 26px;
+        font-size: 30px;
         border: none;
-        border-radius: 12px;
+        border-radius: 15px;
         color: white;
         cursor: pointer;
         transition: 0.2s;
@@ -53,31 +54,38 @@
         transform: scale(1.05);
     }
 
+    /* Видео идеально по центру */
     #videoWrapper {
         display: none;
-        margin-top: 30px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
     }
 
     video {
-        width: 90%;
+        width: 90vw;
         max-width: 900px;
         border-radius: 20px;
-        box-shadow: 0 0 20px black;
+        box-shadow: 0 0 30px black;
     }
 
+    /* Стрелки */
     .arrow {
         position: absolute;
         color: red;
-        font-size: 40px;
         font-weight: bold;
-        animation: wiggle 0.4s infinite alternate ease-in-out;
-        pointer-events: none;
         text-shadow: 0 0 10px black;
+        animation: shake 0.2s infinite alternate ease-in-out;
+        pointer-events: none;
+        user-select: none;
+        z-index: 4;
     }
 
-    @keyframes wiggle {
-        from { transform: rotate(-15deg) scale(1); }
-        to   { transform: rotate(15deg) scale(1.2); }
+    @keyframes shake {
+        from { transform: translateX(-3px) rotate(var(--rot)); }
+        to   { transform: translateX(3px)  rotate(var(--rot)); }
     }
 </style>
 </head>
@@ -96,42 +104,60 @@
 </div>
 
 <script>
-const arrowPositions = [
-    {x: -120, y: -120, size: 50, rot: -45},
-    {x:   0, y: -150, size: 65, rot: 0},
-    {x: 120, y: -120, size: 55, rot: 45},
-    {x: -140, y:   20, size: 60, rot: -90},
-    {x: 140,  y:   20, size: 60, rot: 90},
-    {x: -120, y: 140, size: 50, rot: -135},
-    {x:   0, y: 160, size: 70, rot: 180},
-    {x: 120, y: 140, size: 50, rot: 135}
-];
+// количество стрелок
+const ARROWS = 20;
 
 function createArrows() {
     const btn = document.getElementById("trustButton");
-    if (!btn) return;
-
     const rect = btn.getBoundingClientRect();
+
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    arrowPositions.forEach(pos => {
-        const el = document.createElement("div");
-        el.className = "arrow";
-        el.innerHTML = "⬇";
+    for (let i = 0; i < ARROWS; i++) {
+        const arrow = document.createElement("div");
+        arrow.className = "arrow";
+        arrow.innerHTML = "⬆"; // поворачиваем позже
 
-        el.style.fontSize = pos.size + "px";
-        el.style.left = (centerX + pos.x) + "px";
-        el.style.top  = (centerY + pos.y) + "px";
-        el.style.transform = `rotate(${pos.rot}deg)`;
+        // случайный размер (brainrot)
+        const size = 30 + Math.random() * 90;
+        arrow.style.fontSize = size + "px";
 
-        document.body.appendChild(el);
-    });
+        // Позиции по краям экрана
+        let x, y;
+
+        const side = Math.floor(Math.random() * 4);
+        if (side === 0) {              // сверху
+            x = Math.random() * window.innerWidth;
+            y = -50;
+        } else if (side === 1) {       // снизу
+            x = Math.random() * window.innerWidth;
+            y = window.innerHeight + 50;
+        } else if (side === 2) {       // слева
+            x = -50;
+            y = Math.random() * window.innerHeight;
+        } else {                       // справа
+            x = window.innerWidth + 50;
+            y = Math.random() * window.innerHeight;
+        }
+
+        // направление к кнопке
+        const dx = centerX - x;
+        const dy = centerY - y;
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+
+        arrow.style.left = x + "px";
+        arrow.style.top = y + "px";
+        arrow.style.setProperty("--rot", angle + "deg");
+
+        document.body.appendChild(arrow);
+    }
 }
 
 window.onload = createArrows;
 
 function showVideo() {
+    // убрать стрелки
     document.querySelectorAll(".arrow").forEach(a => a.remove());
     document.getElementById("mainContent").style.display = "none";
 
@@ -139,9 +165,10 @@ function showVideo() {
     const vid  = document.getElementById("prankVideo");
 
     wrap.style.display = "block";
-    vid.src = "video.mp4";
+    vid.src = "video.mp4"; // Убедись что на GitHub файл точно так называется
 
-    vid.play().catch(() => {});
+    vid.play().catch(()=>{});
+
     setTimeout(() => { vid.muted = false; vid.play(); }, 300);
 }
 </script>
