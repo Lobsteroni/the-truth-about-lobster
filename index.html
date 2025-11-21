@@ -1,194 +1,364 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Trust me</title>
-
 <style>
-    body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
-        color: white;
-        text-align: center;
-    }
+  :root {
+    --arrow-z: 1000;
+  }
 
-    .bg {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: url('background.png');
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
-        background-color: black;
-        filter: brightness(0.55);
-        z-index: -1;
-    }
+  html,body{
+    height:100%;
+    margin:0;
+    padding:0;
+    background: #000;
+    font-family: Arial, sans-serif;
+    color: #fff;
+  }
 
-    .content {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 5;
-    }
+  /* фон (вставлена твоя картинка) */
+  .bg{
+    position: fixed;
+    inset:0;
+    background-image: url('/mnt/data/0bfce973-5b19-427a-8828-c6c8083380c3.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover; /* можно заменить contain если хочешь меньше растягивания */
+    filter: brightness(0.55);
+    z-index: -1;
+  }
 
-    button {
-        background: #4CAF50;
-        padding: 20px 40px;
-        font-size: 30px;
-        border: none;
-        border-radius: 15px;
-        color: white;
-        cursor: pointer;
-        box-shadow: 0 0 10px black;
-    }
+  /* Центр с кнопкой */
+  .content {
+    position: absolute;
+    top:50%;
+    left:50%;
+    transform: translate(-50%,-50%);
+    z-index: 20;
+    text-align:center;
+  }
 
-    #videoWrapper {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 10;
-    }
+  h1 { margin:0 0 12px 0; font-size:28px; text-shadow:0 2px 6px rgba(0,0,0,0.7); }
 
-    video {
-        width: 90vw;
-        max-width: 900px;
-        border-radius: 20px;
-        box-shadow: 0 0 30px black;
-    }
+  button#trustButton {
+    background:#38a853;
+    border:none;
+    color:white;
+    padding:18px 34px;
+    font-size:22px;
+    border-radius:12px;
+    cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,0.6);
+  }
+  button#trustButton:hover{ transform:scale(1.05); }
 
-    /* цельная стрелка */
-    .arrow {
-        position: absolute;
-        width: 2000px; /* тянется далеко */
-        height: 40px;
-        opacity: 0;
-        transition: opacity 0.4s ease;
-        pointer-events: none;
-        z-index: 4;
-    }
+  /* контейнер для видео (по центру) */
+  #videoWrapper {
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    z-index: 30;
+    width: 90vw;
+    max-width: 1100px;
+  }
+  #videoWrapper video{
+    width:100%;
+    border-radius:14px;
+    box-shadow:0 18px 60px rgba(0,0,0,0.7);
+  }
+
+  /* SVG-стрелки (абсолютно позиционируемые элементы) */
+  .arrow-svg {
+    position: absolute;
+    left:0;
+    top:0;
+    transform-origin: 0 50%; /* точка вращения: левый центр */
+    pointer-events: none;
+    z-index: var(--arrow-z);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
 </style>
 </head>
-
 <body>
 
 <div class="bg"></div>
 
 <div class="content" id="mainContent">
-    <h1>Trust me 😈</h1>
-    <button id="trustButton" onclick="showVideo()">Trust me</button>
+  <h1>Trust me 😈</h1>
+  <button id="trustButton" onclick="showVideo()">Trust me</button>
 </div>
 
 <div id="videoWrapper">
-    <video id="prankVideo" autoplay muted playsinline></video>
+  <video id="prankVideo" autoplay muted playsinline></video>
 </div>
 
 <script>
-let arrowTimer = null;
-const CYCLE = 2500;
+/* ==== ПАРАМЕТРЫ ==== */
+const CYCLE_MS = 2500;          // период волны
+const MIN_ARROWS = 3;           // минимум стрелок за волну
+const MAX_ARROWS = 5;           // максимум стрелок за волну
+const ARROW_MIN_THICK = 12;     // мин толщина линии px
+const ARROW_MAX_THICK = 46;     // макс толщина линии px
+const ARROW_MIN_HEAD = 28;      // мин длина наконечника px
+const ARROW_MAX_HEAD = 90;      // макс длина наконечника px
+const ARROW_MARGIN = 24;        // расстояние от центра кнопки до конца стрелки (чтобы не накрывать кнопку)
+const WAVE_COUNT = 1;           // уже не нужно, но оставлю
 
-/* Создаём одноцелую SVG стрелку */
-function createSvgArrow() {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "arrow");
-    svg.setAttribute("viewBox", "0 0 2000 40");
+let arrowInterval = null;
 
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", "0");
-    line.setAttribute("y1", "20");
-    line.setAttribute("x2", "1800");  // длина
-    line.setAttribute("y2", "20");
-    line.setAttribute("stroke", "red");
-    line.setAttribute("stroke-width", "20");
-    line.setAttribute("stroke-linecap", "round");
-    line.setAttribute("filter", "drop-shadow(0 0 5px black)");
-
-    const head = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-    head.setAttribute("points", "1800,0 2000,20 1800,40");
-    head.setAttribute("fill", "red");
-    head.setAttribute("filter", "drop-shadow(0 0 5px black)");
-
-    svg.appendChild(line);
-    svg.appendChild(head);
-
-    return svg;
+/* Helper: случайное число в диапазоне */
+function rand(min, max) {
+  return min + Math.random() * (max - min);
+}
+function randInt(min, max) {
+  return Math.floor(rand(min, max+1));
 }
 
-/* волна стрелок */
-function spawnArrows() {
-
-    clearArrows();
-
-    const btn = document.getElementById("trustButton");
-    const rect = btn.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    const count = 6; // стрелок за волну
-
-    for (let i = 0; i < count; i++) {
-        const arrow = createSvgArrow();
-
-        let x, y;
-        const side = Math.floor(Math.random() * 4);
-
-        if (side === 0) { x = Math.random() * innerWidth; y = 0; }
-        if (side === 1) { x = Math.random() * innerWidth; y = innerHeight; }
-        if (side === 2) { x = 0; y = Math.random() * innerHeight; }
-        if (side === 3) { x = innerWidth; y = Math.random() * innerHeight; }
-
-        // угол на кнопку
-        const dx = centerX - x;
-        const dy = centerY - y;
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-        arrow.style.left = `${x}px`;
-        arrow.style.top = `${y}px`;
-        arrow.style.transform = `rotate(${angle}deg)`;
-
-        arrow.style.opacity = "0";
-        document.body.appendChild(arrow);
-
-        setTimeout(() => { arrow.style.opacity = "1"; }, 20);
-        setTimeout(() => { arrow.style.opacity = "0"; }, CYCLE - 600);
-    }
+/* Конфигурация точек появления: углы и стороны */
+function pickSpawnPoint() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  // варианты: top-left, top, top-right, right, bottom-right, bottom, bottom-left, left
+  const choices = [
+    {x: 0, y: 0},               // top-left
+    {x: rand(0, w), y: 0},      // top (random x)
+    {x: w, y: 0},               // top-right
+    {x: w, y: rand(0, h)},      // right
+    {x: w, y: h},               // bottom-right
+    {x: rand(0, w), y: h},      // bottom
+    {x: 0, y: h},               // bottom-left
+    {x: 0, y: rand(0, h)}       // left
+  ];
+  // выберем случайный элемент из массива
+  return choices[randInt(0, choices.length-1)];
 }
 
-/* Удалить старые стрелки */
-function clearArrows() {
-    document.querySelectorAll(".arrow").forEach(a => a.remove());
+/* Создаёт одну SVG-стрелку, направленную из (sx,sy) в центр кнопки (cx,cy)
+   Возвращает DOM-элемент <svg class="arrow-svg"> готовый к позиционированию.
+*/
+function makeArrowSVG(sx, sy, cx, cy) {
+  const dx = cx - sx;
+  const dy = cy - sy;
+  const dist = Math.hypot(dx, dy);
+
+  // толщина линии и размер наконечника
+  const thickness = randInt(ARROW_MIN_THICK, ARROW_MAX_THICK);
+  const headLen = randInt(ARROW_MIN_HEAD, ARROW_MAX_HEAD);
+  // чтобы стрелка не перекрывала кнопку — укоротим её на ARROW_MARGIN
+  const usable = Math.max(40, dist - ARROW_MARGIN);
+  const shaftLen = Math.max(20, usable - headLen);
+
+  // высота SVG = немного больше толщины + padding для вида наконечника
+  const height = Math.max( Math.ceil(thickness*1.6), headLen*0.8 );
+  const centerY = height / 2;
+
+  // создаём svg
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("class", "arrow-svg");
+  svg.setAttribute("width", shaftLen + headLen);
+  svg.setAttribute("height", height);
+  svg.setAttribute("viewBox", `0 0 ${shaftLen + headLen} ${height}`);
+  svg.style.left = sx + "px";
+  svg.style.top = sy + "px";
+
+  // линия (shaft)
+  const line = document.createElementNS(svgNS, "rect");
+  line.setAttribute("x", 0);
+  line.setAttribute("y", centerY - thickness/2);
+  line.setAttribute("width", shaftLen);
+  line.setAttribute("height", thickness);
+  line.setAttribute("rx", thickness/2);
+  line.setAttribute("fill", "red");
+  // черная окантовка: создадим тень-подложку чуть большего размера под линией
+  const lineStroke = document.createElementNS(svgNS, "rect");
+  lineStroke.setAttribute("x", -2);
+  lineStroke.setAttribute("y", centerY - thickness/2 - 2);
+  lineStroke.setAttribute("width", shaftLen + 4);
+  lineStroke.setAttribute("height", thickness + 4);
+  lineStroke.setAttribute("rx", thickness/2 + 2);
+  lineStroke.setAttribute("fill", "black");
+  svg.appendChild(lineStroke);
+  svg.appendChild(line);
+
+  // наконечник (triangle)
+  const head = document.createElementNS(svgNS, "polygon");
+  // points: base left (shaftLen, centerY - headH/2), tip (shaftLen+headLen, centerY), base right (shaftLen, centerY + headH/2)
+  const headH = Math.max(thickness*1.6, headLen * 0.8);
+  const p1 = `${shaftLen},${centerY - headH/2}`;
+  const p2 = `${shaftLen + headLen},${centerY}`;
+  const p3 = `${shaftLen},${centerY + headH/2}`;
+  head.setAttribute("points", `${p1} ${p2} ${p3}`);
+  head.setAttribute("fill", "red");
+
+  // black outline for head: duplicate polygon slightly bigger behind
+  const headOutline = document.createElementNS(svgNS, "polygon");
+  // expand outline by small amount using same points but shifted with stroke approach
+  headOutline.setAttribute("points", `${p1} ${p2} ${p3}`);
+  headOutline.setAttribute("fill", "black");
+  // put outline behind head
+  svg.appendChild(headOutline);
+  svg.appendChild(head);
+
+  // rotate so arrow points to center; transform-origin is left center (0 centerY)
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  svg.style.transform = `rotate(${angle}deg)`;
+  svg.style.transformOrigin = `0 ${centerY}px`;
+
+  return svg;
 }
 
-/* мигание стрелок */
-window.onload = () => {
-    spawnArrows();
-    arrowTimer = setInterval(spawnArrows, CYCLE);
-};
+/* Создает волну стрелок (3..5), добавляет на страницу, плавно показывает и прячет */
+function spawnWave() {
+  // если кнопка уже скрыта (видео запущено) — не создаём
+  const main = document.getElementById('mainContent');
+  if (!main || main.style.display === 'none') return;
 
-/* видео */
+  const btn = document.getElementById('trustButton');
+  const rect = btn.getBoundingClientRect();
+  const centerX = rect.left + rect.width/2;
+  const centerY = rect.top + rect.height/2;
+
+  const count = randInt(MIN_ARROWS, MAX_ARROWS);
+
+  for (let i=0;i<count;i++){
+    const point = pickSpawnPoint();
+    const sx = point.x;
+    const sy = point.y;
+    // create SVG arrow
+    const arrow = makeArrowSVG(sx, sy, centerX, centerY);
+    // add black outline effect behind (we handled outline in SVG with extra shapes)
+    document.body.appendChild(arrow);
+    // small random delay for staggered appearance
+    const appearDelay = randInt(10, 220);
+    setTimeout(()=> { arrow.style.opacity = '1'; }, appearDelay);
+    // fade out near end of cycle
+    setTimeout(()=> { arrow.style.opacity = '0'; }, CYCLE_MS - 500 + appearDelay);
+    // remove after fully hidden
+    setTimeout(()=> { if(arrow && arrow.parentNode) arrow.parentNode.removeChild(arrow); }, CYCLE_MS + 400 + appearDelay);
+  }
+}
+
+/* Обертка для старых имен функций — используем makeArrowSVG */
+function makeArrowSVG(sx, sy, cx, cy) {
+  // wrapper (we implemented a slightly different function earlier) — call implementation above
+  return makeArrowSVG_impl(sx, sy, cx, cy);
+}
+
+/* Реализация с другим именем (чтобы избежать рекурсии) */
+function makeArrowSVG_impl(sx, sy, cx, cy) {
+  const dx = cx - sx;
+  const dy = cy - sy;
+  const dist = Math.hypot(dx, dy);
+
+  const thickness = randInt(ARROW_MIN_THICK, ARROW_MAX_THICK);
+  const headLen = randInt(ARROW_MIN_HEAD, ARROW_MAX_HEAD);
+  const usable = Math.max(40, dist - ARROW_MARGIN);
+  const shaftLen = Math.max(20, usable - headLen);
+
+  const height = Math.max( Math.ceil(thickness*1.6), headLen*0.8 );
+  const centerY = height / 2;
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("class", "arrow-svg");
+  svg.setAttribute("width", shaftLen + headLen + 4);
+  svg.setAttribute("height", height + 4);
+  svg.setAttribute("viewBox", `0 0 ${shaftLen + headLen + 4} ${height + 4}`);
+  svg.style.left = sx + "px";
+  svg.style.top = sy + "px";
+
+  // black outline rectangle slightly larger
+  const lineStroke = document.createElementNS(svgNS, "rect");
+  lineStroke.setAttribute("x", 0);
+  lineStroke.setAttribute("y", centerY - thickness/2 - 2);
+  lineStroke.setAttribute("width", shaftLen + 4);
+  lineStroke.setAttribute("height", thickness + 4);
+  lineStroke.setAttribute("rx", (thickness/2)+2);
+  lineStroke.setAttribute("fill", "black");
+  svg.appendChild(lineStroke);
+
+  const line = document.createElementNS(svgNS, "rect");
+  line.setAttribute("x", 2);
+  line.setAttribute("y", centerY - thickness/2);
+  line.setAttribute("width", shaftLen);
+  line.setAttribute("height", thickness);
+  line.setAttribute("rx", thickness/2);
+  line.setAttribute("fill", "red");
+  svg.appendChild(line);
+
+  const headH = Math.max(thickness*1.6, headLen * 0.8);
+  const baseX = 2 + shaftLen;
+  const p1 = `${baseX},${centerY - headH/2}`;
+  const p2 = `${baseX + headLen},${centerY}`;
+  const p3 = `${baseX},${centerY + headH/2}`;
+
+  const headOutline = document.createElementNS(svgNS, "polygon");
+  headOutline.setAttribute("points", `${p1} ${p2} ${p3}`);
+  headOutline.setAttribute("fill", "black");
+  svg.appendChild(headOutline);
+
+  const head = document.createElementNS(svgNS, "polygon");
+  head.setAttribute("points", `${p1} ${p2} ${p3}`);
+  head.setAttribute("fill", "red");
+  svg.appendChild(head);
+
+  // rotate
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  svg.style.transform = `rotate(${angle}deg)`;
+  svg.style.transformOrigin = `0 ${centerY}px`;
+
+  return svg;
+}
+
+/* Начинаем волны стрелок */
+function startArrowLoop(){
+  // первый взрыв
+  spawnWave();
+  // повторяем
+  arrowInterval = setInterval(spawnWave, CYCLE_MS);
+}
+
+/* Очищаем все стрелки немедленно */
+function clearAllArrows() {
+  if (arrowInterval) {
+    clearInterval(arrowInterval);
+    arrowInterval = null;
+  }
+  document.querySelectorAll('.arrow-svg').forEach(el => el.remove());
+}
+
+/* Запуск после загрузки */
+window.addEventListener('load', () => {
+  // Небольшая пауза чтобы кнопка точно встала (если шрифт подгружался)
+  setTimeout(startArrowLoop, 120);
+});
+
+/* Показ видео и остановка стрелок */
 function showVideo() {
-    clearInterval(arrowTimer);
-    clearArrows();
+  clearAllArrows();
+  const main = document.getElementById('mainContent');
+  main.style.display = 'none';
 
-    document.getElementById("mainContent").style.display = "none";
-    document.getElementById("videoWrapper").style.display = "block";
+  const wrap = document.getElementById('videoWrapper');
+  wrap.style.display = 'block';
 
-    const vid = document.getElementById("prankVideo");
-    vid.src = "video.mp4";
-
-    vid.play().catch(()=>{});
-    setTimeout(() => {
-        vid.muted = false;
-        vid.play();
-    }, 300);
+  const vid = document.getElementById('prankVideo');
+  vid.src = 'video.mp4'; // файл должен лежать рядом с index.html
+  vid.play().catch(()=>{});
+  // попытка снять mute после пользовательского клика (обычно разрешено)
+  setTimeout(()=>{ try{ vid.muted = false; vid.play(); }catch(e){} }, 300);
 }
+
+/* Поддержка ресайза: если меняется размер окна, перестроим последующие волны */
+window.addEventListener('resize', () => {
+  // следующий spawnWave сам пересчитает положение кнопки
+});
 </script>
 
 </body>
